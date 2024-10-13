@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import moment from "moment-timezone";
 import Divider from "@/app/components/atoms/Divider";
 import PainelHeader from "@/app/components/molecules/PainelHeader";
 import Table from "@/app/components/organisms/Table";
@@ -15,6 +16,8 @@ import {
   editUsuario,
   postUsuario,
 } from "@/app/services/userService";
+
+import { useSearchStore } from "@/app/hooks/searchHook"; 
 
 export default function Usuarios() {
   const [userData, setUserData] = useState<Usuario[]>([]);
@@ -33,6 +36,8 @@ export default function Usuarios() {
     "Ações",
   ];
 
+  const { usuarioSearch, setUsuarioSearch } = useSearchStore();
+
   const fetchData = async () => {
     try {
       const users = await getUsuarios();
@@ -41,6 +46,10 @@ export default function Usuarios() {
       console.error("Erro ao buscar usuários:", error);
     }
   };
+
+  const filteredUsuarios = userData.filter((usuario) =>
+    usuario.nomeUsuario.toLowerCase().includes(usuarioSearch.toLowerCase())
+  );
 
   useEffect(() => {
     fetchData();
@@ -61,7 +70,7 @@ export default function Usuarios() {
   };
 
   const confirmDelete = (rowIndex: number) => {
-    const toastId = `delete_${userData[rowIndex].idUsuario}`; // Identificador único para o toast
+    const toastId = `delete_${userData[rowIndex].idUsuario}`; 
 
     if (!toast.isActive(toastId)) {
       toast.warn(
@@ -122,12 +131,19 @@ export default function Usuarios() {
   };
 
   const handleSave = async (updatedData: Usuario) => {
-    const { idUsuario, ...userWithoutId } = updatedData;
+    const { idUsuario, dataNascimentoUsuario, ...userWithoutId } = updatedData;
+
+    // Formatando a data no padrão ISO 8601
+    const formattedData = {
+      ...userWithoutId,
+      dataNascimentoUsuario: moment(dataNascimentoUsuario).toISOString(),
+    };
+
     const toastId = isEditMode ? `edit_${idUsuario}` : "create_new";
 
     try {
       if (isEditMode) {
-        await editUsuario(userWithoutId, idUsuario);
+        await editUsuario(formattedData, idUsuario);
 
         if (!toast.isActive(toastId)) {
           toast.success("Usuário editado com sucesso!", {
@@ -137,7 +153,7 @@ export default function Usuarios() {
           });
         }
       } else {
-        await postUsuario(userWithoutId);
+        await postUsuario(formattedData);
 
         if (!toast.isActive(toastId)) {
           toast.success("Novo usuário adicionado!", {
@@ -185,13 +201,15 @@ export default function Usuarios() {
         title="Tabela de Usuários" 
         onAddClientClick={handleAddUser}
         buttonText="+ Adicionar usuário"
+        itemSearch={usuarioSearch}
+        setItemSearch={setUsuarioSearch}
       />
 
       <Divider />
 
       <Table
         headerData={headerData}
-        data={userData.map(user => [
+        data={filteredUsuarios.map(user => [
           user.idUsuario,
           user.nomeUsuario,
           user.emailUsuario,

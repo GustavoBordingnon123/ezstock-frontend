@@ -23,6 +23,9 @@ export const getUsuarios = async (): Promise<Usuario[]> => {
 };
 
 export const postUsuario = async (usuario: Omit<Usuario, 'idUsuario'>): Promise<void> => {
+
+  console.log('usuario data: ', usuario);
+
   try {
     await axios.post(`${BASE_URL}/AdicionaUsuario`, usuario);
   } catch (error) {

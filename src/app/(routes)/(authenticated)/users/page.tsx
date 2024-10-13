@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import moment from "moment-timezone";
 import Divider from "@/app/components/atoms/Divider";
 import PainelHeader from "@/app/components/molecules/PainelHeader";
 import Table from "@/app/components/organisms/Table";
@@ -18,6 +17,7 @@ import {
 } from "@/app/services/userService";
 
 import { useSearchStore } from "@/app/hooks/searchHook"; 
+import moment from "moment";
 
 export default function Usuarios() {
   const [userData, setUserData] = useState<Usuario[]>([]);
@@ -38,6 +38,7 @@ export default function Usuarios() {
 
   const { usuarioSearch, setUsuarioSearch } = useSearchStore();
 
+
   const fetchData = async () => {
     try {
       const users = await getUsuarios();
@@ -47,7 +48,7 @@ export default function Usuarios() {
     }
   };
 
-  const filteredUsuarios = userData.filter((usuario) =>
+  const filteredProdutos = userData.filter((usuario) =>
     usuario.nomeUsuario.toLowerCase().includes(usuarioSearch.toLowerCase())
   );
 
@@ -131,20 +132,20 @@ export default function Usuarios() {
   };
 
   const handleSave = async (updatedData: Usuario) => {
-    const { idUsuario, dataNascimentoUsuario, ...userWithoutId } = updatedData;
-
-    // Formatando a data no padrão ISO 8601
     const formattedData = {
-      ...userWithoutId,
-      dataNascimentoUsuario: moment(dataNascimentoUsuario).toISOString(),
+      ...updatedData,
+      dataNascimentoUsuario: moment(updatedData.dataNascimentoUsuario).toISOString(),
     };
-
+  
+    const { idUsuario, ...userWithoutId } = formattedData;
     const toastId = isEditMode ? `edit_${idUsuario}` : "create_new";
-
+  
+    console.log("data do usuario: ", formattedData);
+  
     try {
       if (isEditMode) {
-        await editUsuario(formattedData, idUsuario);
-
+        await editUsuario(userWithoutId, idUsuario);
+  
         if (!toast.isActive(toastId)) {
           toast.success("Usuário editado com sucesso!", {
             className: "bg-blue-500 text-white p-4 rounded",
@@ -153,8 +154,8 @@ export default function Usuarios() {
           });
         }
       } else {
-        await postUsuario(formattedData);
-
+        await postUsuario(userWithoutId);
+  
         if (!toast.isActive(toastId)) {
           toast.success("Novo usuário adicionado!", {
             className: "bg-green-500 text-white p-4 rounded",
@@ -178,6 +179,9 @@ export default function Usuarios() {
   };
 
   const handleAddUser = () => {
+
+
+
     setSelectedUser({
       idUsuario: 0,
       nomeUsuario: "",
@@ -209,7 +213,7 @@ export default function Usuarios() {
 
       <Table
         headerData={headerData}
-        data={filteredUsuarios.map(user => [
+        data={filteredProdutos.map(user => [
           user.idUsuario,
           user.nomeUsuario,
           user.emailUsuario,
